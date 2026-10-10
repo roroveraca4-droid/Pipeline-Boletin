@@ -11,18 +11,17 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 DRAFTS_DIR = os.path.join(PROJECT_ROOT, "drafts")
 
-# Cargar archivo .env si existe en el sistema local
+# Cargar .env si existe en local
 env_path = os.path.join(PROJECT_ROOT, ".env")
 if os.path.exists(env_path):
     load_dotenv(env_path)
 
-# 2. Obtención flexible de credenciales (Servidor local o GitHub Actions)
+# 2. Obtención flexible de credenciales
 API_KEY = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() else os.getenv("BEEHIIV_API_KEY", "")
-PUB_ID = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2].strip() else os.getenv("BEEHIIV_PUBLICATION_ID", "")
+PUB_ID = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2].strip() else os.getenv("BEEHIIV_PUBLICATION_ID", os.getenv("BEEHIIV_PUB_ID", ""))
 
 if not API_KEY or not PUB_ID:
-    print("❌ Error: BEEHIIV_API_KEY o BEEHIIV_PUBLICATION_ID no están configurados.")
-    print("Asegúrate de tener el archivo .env o pasar las claves por línea de comandos.")
+    print("❌ Error: BEEHIIV_API_KEY o BEEHIIV_PUB_ID no están configurados.")
     sys.exit(1)
 
 # 3. Encontrar el borrador más reciente en drafts/
@@ -54,8 +53,7 @@ payload = {
     "title": title,
     "subtitle": "Edición automatizada sobre novedades e impacto de IA en Latam",
     "status": "draft",
-    "content_type": "html",
-    "body": html_body
+    "body_content": html_body
 }
 
 print("🚀 Enviando borrador a Beehiiv...")
