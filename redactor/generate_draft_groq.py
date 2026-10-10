@@ -59,7 +59,7 @@ try:
     client = Groq(api_key=GROQ_API_KEY)
     completion = client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         temperature=0.3,
     )
 
