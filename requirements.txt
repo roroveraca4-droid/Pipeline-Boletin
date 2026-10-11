@@ -3,3 +3,4 @@ beautifulsoup4
 groq
 markdown
 python-dotenv
+matplotlib
