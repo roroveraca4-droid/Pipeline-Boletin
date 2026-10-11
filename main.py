@@ -25,8 +25,9 @@ def main():
     # 1. Scraping de URLs
     run_step("python3 scraper/fetch_sources.py", "FASE 1: Web Scraping de Noticias")
 
-    # 2. Redacción con Groq API ($0)
-    run_step(f"python3 redactor/generate_draft_groq.py '{groq_key}'", "FASE 2: Redacción B2B con Groq (Llama 3.3 70B)")
+  # 2. Redacción y Formato Visual
+    run_step(f"python3 redactor/generate_draft_groq.py '{groq_key}'", "FASE 2A: Redacción B2B con Groq (Llama 3.3 70B)")
+    run_step("python3 redactor/generate_charts.py", "FASE 2B: Generación Visual de Gráficas de Datos")
 
     # 3. Publicación a Beehiiv API
     run_step(f"python3 publisher/SKILL_PUBLISHER.py '{beehiiv_key}' '{beehiiv_pub_id}'", "FASE 3: Subida de Borrador a Beehiiv")
