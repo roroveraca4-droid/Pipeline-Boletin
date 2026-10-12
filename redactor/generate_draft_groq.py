@@ -76,7 +76,7 @@ try:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-        model="llama3-70b-8192", # <--- Actualizado al modelo correcto
+        model="llama3-70b-8192",
         temperature=0.4, 
     )
 
@@ -84,4 +84,15 @@ try:
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     output_filename = f"draft_{date_str}.md"
-    output_path = os.path.join(DRAF
+    
+    # Esta es la línea que se te cortó al pegar:
+    output_path = os.path.join(DRAFTS_DIR, output_filename)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(draft_content)
+
+    print(f"✅ Borrador generado exitosamente en: drafts/{output_filename}")
+
+except Exception as e:
+    print(f"❌ Error al consultar la API de Groq: {e}")
+    sys.exit(1)
