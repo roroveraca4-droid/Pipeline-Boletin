@@ -75,7 +75,7 @@ print("⚡ Generando borrador con el nuevo SDK de Gemini...")
 try:
     # 4. Llamada a Gemini usando el nuevo formato
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-3.8-flash',
         contents=user_prompt,
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
