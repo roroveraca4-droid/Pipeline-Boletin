@@ -4,12 +4,16 @@ import glob
 from datetime import datetime
 from groq import Groq
 
+# 1. Configuración de Rutas
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 SOURCES_DIR = os.path.join(PROJECT_ROOT, "sources")
 DRAFTS_DIR = os.path.join(PROJECT_ROOT, "drafts")
+
+# Nuevas rutas para los archivos de reglas en la carpeta redactor/
 SKILL_FILE = os.path.join(BASE_DIR, "SKILL_REDACTOR.md")
-TONO_FILE = os.path.join(PROJECT_ROOT, "TONO_DE_VOZ.md")
+EDITORIAL_FILE = os.path.join(BASE_DIR, "EDITORIAL_RULES.md")
+DESIGN_FILE = os.path.join(BASE_DIR, "DESIGN_GUIDELINES.md")
 
 os.makedirs(DRAFTS_DIR, exist_ok=True)
 
@@ -25,8 +29,10 @@ def read_file(path: str) -> str:
             return f.read()
     return ""
 
+# Cargar las instrucciones y reglas actualizadas
 skill_instructions = read_file(SKILL_FILE)
-tone_instructions = read_file(TONO_FILE)
+editorial_rules = read_file(EDITORIAL_FILE)
+design_guidelines = read_file(DESIGN_FILE)
 
 source_files = glob.glob(os.path.join(SOURCES_DIR, "*.md"))
 if not source_files:
@@ -39,18 +45,26 @@ for file_path in source_files:
     content = read_file(file_path)
     combined_sources += f"\n\n--- FUENTE: {file_name} ---\n\n{content}"
 
-prompt = f"""
-INSTRUCCIONES DE REDACCIÓN:
+# Separación de Prompt de Sistema (Reglas) y Prompt de Usuario (Noticias)
+system_prompt = f"""
+Eres el Editor Jefe de un boletín sobre Inteligencia Artificial para profesionales corporativos en Latinoamérica.
+
+INSTRUCCIONES PRINCIPALES (SKILL):
 {skill_instructions}
 
-GUÍA DE TONO Y VOZ:
-{tone_instructions}
+REGLAS EDITORIALES Y DE TONO:
+{editorial_rules}
 
+REGLAS DE DISEÑO Y FORMATO:
+{design_guidelines}
+"""
+
+user_prompt = f"""
 INFORMACIÓN EXTRAÍDA DE LAS FUENTES:
 {combined_sources}
 
 TAREA:
-Sintetiza las fuentes y redacta el boletín completo en formato Markdown siguiendo estrictamente las instrucciones y la guía de tono B2B.
+Sintetiza las fuentes y redacta la edición de hoy del boletín en formato Markdown siguiendo estrictamente las reglas editoriales (estilo Morning Brew) y de diseño del sistema.
 """
 
 print("⚡ Generando borrador con Groq (Llama 3.3 70B)...")
@@ -58,9 +72,12 @@ print("⚡ Generando borrador con Groq (Llama 3.3 70B)...")
 try:
     client = Groq(api_key=GROQ_API_KEY)
     completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="openai/gpt-oss-120b",
-        temperature=0.3,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        model="llama-3.3-70b-versatile",
+        temperature=0.4, # Ligeramente más alto para permitir el humor/tono conversacional
     )
 
     draft_content = completion.choices[0].message.content
