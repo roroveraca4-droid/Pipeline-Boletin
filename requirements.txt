@@ -3,4 +3,4 @@ beautifulsoup4
 markdown
 python-dotenv
 matplotlib
-google-generativeai
+google-genai
