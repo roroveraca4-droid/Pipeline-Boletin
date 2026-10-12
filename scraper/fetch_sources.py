@@ -10,12 +10,10 @@ from urllib.parse import urljoin, urlparse
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 SOURCES_DIR = os.path.join(PROJECT_ROOT, "sources")
-IMAGES_DIR = os.path.join(SOURCES_DIR, "images")
 LOG_FILE = os.path.join(BASE_DIR, "SCRAPER_LOGS.md")
 URLS_FILE = os.path.join(BASE_DIR, "urls.txt")
 
 os.makedirs(SOURCES_DIR, exist_ok=True)
-os.makedirs(IMAGES_DIR, exist_ok=True)
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -41,25 +39,6 @@ def sanitize_filename(name: str) -> str:
     name = re.sub(r'[^\w\s-]', '', name).strip().lower()
     return re.sub(r'[-\s]+', '_', name)[:50]
 
-def download_image(img_url: str, article_slug: str) -> str:
-    try:
-        response = requests.get(img_url, headers=HEADERS, timeout=10)
-        if response.status_code == 200:
-            parsed = urlparse(img_url)
-            ext = os.path.splitext(parsed.path)[1]
-            if not ext or len(ext) > 5:
-                ext = ".jpg"
-                
-            img_name = f"{article_slug}_{datetime.now().strftime('%H%M%S')}{ext}"
-            img_path = os.path.join(IMAGES_DIR, img_name)
-            
-            with open(img_path, "wb") as f:
-                f.write(response.content)
-            return f"images/{img_name}"
-    except Exception as e:
-        log_event("WARNING", img_url, f"Failed to download image: {str(e)}")
-    return ""
-
 def scrape_article(url: str):
     url = url.strip()
     if not url or url.startswith("#"):
@@ -80,11 +59,11 @@ def scrape_article(url: str):
         title = title_tag.get_text().strip() if title_tag else "Sin Titulo"
         slug = sanitize_filename(title)
         
-        img_rel_path = ""
+        # OBTENER URL PÚBLICA DE LA IMAGEN
+        img_url = ""
         meta_img = soup.find("meta", property="og:image")
         if meta_img and meta_img.get("content"):
             img_url = urljoin(url, meta_img["content"])
-            img_rel_path = download_image(img_url, slug)
             
         paragraphs = soup.find_all("p")
         clean_text = []
@@ -104,17 +83,21 @@ def scrape_article(url: str):
         file_name = f"{date_str}_{slug}.md"
         file_path = os.path.join(SOURCES_DIR, file_name)
         
+        # GUARDAR ARCHIVO CON LA IMAGEN ENLAZADA DIRECTAMENTE
         with open(file_path, "w", encoding="utf-8") as f:
             f.write("---\n")
             f.write(f'title: "{title}"\n')
             f.write(f'source_url: "{url}"\n')
             f.write(f'date_extracted: "{datetime.now().strftime("%Y-%m-%d %H:%M")}"\n')
-            f.write(f'has_images: {"true" if img_rel_path else "false"}\n')
+            f.write(f'has_images: {"true" if img_url else "false"}\n')
             f.write("---\n\n")
             f.write(f"# {title}\n\n")
-            if img_rel_path:
-                f.write(f"![Imagen Principal]({img_rel_path})\n\n")
-            f.write(f"**Fuente:** [{url}]({url})\n\n---\n\n")
+            
+            if img_url:
+                f.write(f"![Imagen Principal]({img_url})\n")
+                f.write(f"*(Fuente: {urlparse(url).netloc})*\n\n")
+                
+            f.write(f"**Enlace original:** [{url}]({url})\n\n---\n\n")
             f.write(body)
             
         log_event("SUCCESS", url, f"Saved as {file_name}")
@@ -128,16 +111,14 @@ if __name__ == "__main__":
     print("--- INICIANDO EXTRACCIÓN DE NOTICIAS ---")
     urls = []
     
-    # 1. Si le pasas una URL por comandos en terminal
     if len(sys.argv) > 1:
         urls = sys.argv[1:]
-    # 2. Si existe urls.txt, lee las URLs guardadas ahí
     elif os.path.exists(URLS_FILE):
         with open(URLS_FILE, "r", encoding="utf-8") as f:
             urls = [line.strip() for line in f if line.strip() and not line.startswith("#")]
             
     if not urls:
-        print(f"❌ No hay URLs. Agrega enlaces en {URLS_FILE} o pásalas directamente en la terminal.")
+        print(f"❌ No hay URLs. Agrega enlaces en {URLS_FILE} o pásalas en la terminal.")
         sys.exit(1)
         
     for target_url in urls:
