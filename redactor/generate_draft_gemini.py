@@ -2,7 +2,7 @@ import os
 import sys
 import glob
 from datetime import datetime
-from groq import Groq
+import google.generativeai as genai
 
 # 1. Configuración de Rutas
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -10,18 +10,20 @@ PROJECT_ROOT = os.path.dirname(BASE_DIR)
 SOURCES_DIR = os.path.join(PROJECT_ROOT, "sources")
 DRAFTS_DIR = os.path.join(PROJECT_ROOT, "drafts")
 
-# Nuevas rutas para los archivos de reglas en la carpeta redactor/
 SKILL_FILE = os.path.join(BASE_DIR, "SKILL_REDACTOR.md")
 EDITORIAL_FILE = os.path.join(BASE_DIR, "EDITORIAL_RULES.md")
 DESIGN_FILE = os.path.join(BASE_DIR, "DESIGN_GUIDELINES.md")
 
 os.makedirs(DRAFTS_DIR, exist_ok=True)
 
-GROQ_API_KEY = sys.argv[1] if len(sys.argv) > 1 else os.getenv("GROQ_API_KEY", "")
+# 2. Configuración de API Key
+GEMINI_API_KEY = sys.argv[1] if len(sys.argv) > 1 else os.getenv("GEMINI_API_KEY", "")
 
-if not GROQ_API_KEY:
-    print("❌ Error: Falta la GROQ_API_KEY.")
+if not GEMINI_API_KEY:
+    print("❌ Error: Falta la GEMINI_API_KEY.")
     sys.exit(1)
+
+genai.configure(api_key=GEMINI_API_KEY)
 
 def read_file(path: str) -> str:
     if os.path.exists(path):
@@ -29,7 +31,6 @@ def read_file(path: str) -> str:
             return f.read()
     return ""
 
-# Cargar las instrucciones y reglas actualizadas
 skill_instructions = read_file(SKILL_FILE)
 editorial_rules = read_file(EDITORIAL_FILE)
 design_guidelines = read_file(DESIGN_FILE)
@@ -45,8 +46,8 @@ for file_path in source_files:
     content = read_file(file_path)
     combined_sources += f"\n\n--- FUENTE: {file_name} ---\n\n{content}"
 
-# Separación de Prompt de Sistema y Usuario
-system_prompt = f"""
+# 3. Preparar Prompts
+system_instruction = f"""
 Eres el Editor Jefe de un boletín sobre Inteligencia Artificial para profesionales corporativos en Latinoamérica.
 
 INSTRUCCIONES PRINCIPALES (SKILL):
@@ -67,25 +68,22 @@ TAREA:
 Sintetiza las fuentes y redacta la edición de hoy del boletín en formato Markdown siguiendo estrictamente las reglas editoriales (estilo Morning Brew) y de diseño del sistema.
 """
 
-print("⚡ Generando borrador con Groq (mixtral-8x7b-32768)...")
+print("⚡ Generando borrador con Gemini (gemini-1.5-flash)...")
 
 try:
-    client = Groq(api_key=GROQ_API_KEY)
-    completion = client.chat.completions.create(
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-       model="mixtral-8x7b-32768",
-        temperature=0.4, 
+    # 4. Llamada a Gemini 1.5 Flash
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction=system_instruction,
+        generation_config={"temperature": 0.4}
     )
+    
+    response = model.generate_content(user_prompt)
+    draft_content = response.text
 
-    draft_content = completion.choices[0].message.content
-
+    # 5. Guardar el archivo
     date_str = datetime.now().strftime("%Y-%m-%d")
     output_filename = f"draft_{date_str}.md"
-    
-    # Esta es la línea que se te cortó al pegar:
     output_path = os.path.join(DRAFTS_DIR, output_filename)
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -94,5 +92,5 @@ try:
     print(f"✅ Borrador generado exitosamente en: drafts/{output_filename}")
 
 except Exception as e:
-    print(f"❌ Error al consultar la API de Groq: {e}")
+    print(f"❌ Error al consultar la API de Gemini: {e}")
     sys.exit(1)
