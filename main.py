@@ -27,7 +27,7 @@ def main():
     run_step("python3 scraper/fetch_sources.py", "FASE 1: Web Scraping de Noticias")
 
     # 2. Redacción y Formato Visual (Actualizado a Gemini)
-    run_step(f"python3 redactor/generate_draft_gemini.py '{gemini_key}'", "FASE 2A: Redacción B2B con Gemini 1.5 Flash")
+    run_step(f"python3 redactor/generate_draft_gemini.py '{gemini_key}'", "FASE 2A: Redacción B2B con Gemini 3.8 Flash")
     run_step("python3 redactor/generate_charts.py", "FASE 2B: Generación Visual de Gráficas de Datos")
 
     # 3. Publicación a Beehiiv API
