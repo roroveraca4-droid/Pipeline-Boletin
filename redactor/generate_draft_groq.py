@@ -45,7 +45,7 @@ for file_path in source_files:
     content = read_file(file_path)
     combined_sources += f"\n\n--- FUENTE: {file_name} ---\n\n{content}"
 
-# Separación de Prompt de Sistema (Reglas) y Prompt de Usuario (Noticias)
+# Separación de Prompt de Sistema y Usuario
 system_prompt = f"""
 Eres el Editor Jefe de un boletín sobre Inteligencia Artificial para profesionales corporativos en Latinoamérica.
 
@@ -67,7 +67,7 @@ TAREA:
 Sintetiza las fuentes y redacta la edición de hoy del boletín en formato Markdown siguiendo estrictamente las reglas editoriales (estilo Morning Brew) y de diseño del sistema.
 """
 
-print("⚡ Generando borrador con Groq (Llama 3.3 70B)...")
+print("⚡ Generando borrador con Groq (Llama 3 70B)...")
 
 try:
     client = Groq(api_key=GROQ_API_KEY)
@@ -76,21 +76,12 @@ try:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-        model="llama-3.3-70b-versatile",
-        temperature=0.4, # Ligeramente más alto para permitir el humor/tono conversacional
+        model="llama3-70b-8192", # <--- Actualizado al modelo correcto
+        temperature=0.4, 
     )
 
     draft_content = completion.choices[0].message.content
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     output_filename = f"draft_{date_str}.md"
-    output_path = os.path.join(DRAFTS_DIR, output_filename)
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(draft_content)
-
-    print(f"✅ Borrador generado exitosamente en: drafts/{output_filename}")
-
-except Exception as e:
-    print(f"❌ Error al consultar la API de Groq: {e}")
-    sys.exit(1)
+    output_path = os.path.join(DRAF
