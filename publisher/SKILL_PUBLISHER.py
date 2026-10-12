@@ -1,76 +1,82 @@
 import os
 import sys
-import re
 import glob
+import json
 import requests
 import markdown
-from dotenv import load_dotenv
 
-# 1. Configuración de rutas
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 DRAFTS_DIR = os.path.join(PROJECT_ROOT, "drafts")
+TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
 
-# Cargar .env si existe en local
-env_path = os.path.join(PROJECT_ROOT, ".env")
-if os.path.exists(env_path):
-    load_dotenv(env_path)
+BEEHIIV_API_KEY = sys.argv[1]
+BEEHIIV_PUB_ID = sys.argv[2]
+BEEHIIV_API_URL = f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/posts"
 
-# 2. Obtención flexible de credenciales
-API_KEY = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() else os.getenv("BEEHIIV_API_KEY", "")
-PUB_ID = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2].strip() else os.getenv("BEEHIIV_PUBLICATION_ID", os.getenv("BEEHIIV_PUB_ID", ""))
-
-if not API_KEY or not PUB_ID:
-    print("❌ Error: BEEHIIV_API_KEY o BEEHIIV_PUB_ID no están configurados.")
-    sys.exit(1)
-
-# 3. Encontrar el borrador más reciente en drafts/
+# Buscar el borrador más reciente
 draft_files = glob.glob(os.path.join(DRAFTS_DIR, "draft_*.md"))
 if not draft_files:
-    print("❌ Error: No se encontraron archivos de borrador en drafts/")
+    print("❌ No hay borradores para publicar.")
     sys.exit(1)
 
 latest_draft = max(draft_files, key=os.path.getctime)
-print(f"📄 Procesando borrador: {os.path.basename(latest_draft)}")
+with open(latest_draft, "r", encoding="utf-8-sig") as f:
+    raw_content = f.read()
 
-with open(latest_draft, "r", encoding="utf-8") as f:
-    content = f.read()
+# 1. Extraer Título y Subtítulo
+title = "Edición de Hoy: Waise Studio"
+subtitle = "Lo más relevante en IA"
+body_markdown = raw_content
 
-# 4. Extraer título (# Título) y convertir Markdown a HTML
-title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
-title = title_match.group(1).strip() if title_match else "Nuevo Boletín de IA"
+if "[TITULO]:" in raw_content and "---" in raw_content:
+    parts = raw_content.split("---", 1)
+    meta_part = parts[0]
+    body_markdown = parts[1].strip()
+    
+    for line in meta_part.split('\n'):
+        if line.startswith("[TITULO]:"):
+            title = line.replace("[TITULO]:", "").strip()
+        elif line.startswith("[SUBTITULO]:"):
+            subtitle = line.replace("[SUBTITULO]:", "").strip()
 
-html_body = markdown.markdown(content)
+# 2. Calcular Tiempo de Lectura (200 palabras por minuto)
+word_count = len(body_markdown.split())
+reading_time_mins = max(1, round(word_count / 200))
+reading_time_text = f"Lectura: {reading_time_mins} min"
 
-# 5. Enviar petición a la API v2 de Beehiiv
-url = f"https://api.beehiiv.com/v2/publications/{PUB_ID}/posts"
+# 3. Convertir Markdown a HTML
+body_html = markdown.markdown(body_markdown)
+
+# 4. Inyectar todo en la plantilla HTML de Waise Studio
+with open(TEMPLATE_FILE, "r", encoding="utf-8") as f:
+    html_template = f.read()
+
+# Reemplazamos las variables (puedes cambiar tu Logo URL aquí luego)
+final_html = html_template.replace("{{PREHEADER}}", subtitle)
+final_html = final_html.replace("{{CONTENT_BODY}}", body_html)
+final_html = final_html.replace("{{READING_TIME}}", reading_time_text)
+final_html = final_html.replace("{{ISSUE_TAG}}", "EDICIÓN B2B")
+final_html = final_html.replace("{{LOGO_URL}}", "https://i.imgur.com/TuLogoAqui.png")
+
+# 5. Enviar a Beehiiv
 headers = {
-    "Authorization": f"Bearer {API_KEY}",
+    "Authorization": f"Bearer {BEEHIIV_API_KEY}",
     "Content-Type": "application/json"
 }
 
 payload = {
     "title": title,
-    "subtitle": "Edición automatizada sobre novedades e impacto de IA en Latam",
-    "status": "draft",
-    "body_content": html_body
+    "subtitle": subtitle,
+    "web_content": final_html,
+    "email_content": final_html,
+    "status": "draft"
 }
 
-print("🚀 Enviando borrador a Beehiiv...")
-try:
-    response = requests.post(url, json=payload, headers=headers, timeout=30)
-    
-    if response.status_code in [200, 201]:
-        data = response.json()
-        post_id = data.get("data", {}).get("id", "N/A")
-        print("✅ ¡Borrador creado con éxito en Beehiiv!")
-        print(f"📌 ID de la publicación: {post_id}")
-        print("Entra a tu panel de Beehiiv para darle el visto bueno final.")
-    else:
-        print(f"❌ Error al publicar en Beehiiv (HTTP {response.status_code}):")
-        print(response.text)
-        sys.exit(1)
+response = requests.post(BEEHIIV_API_URL, headers=headers, json=payload)
 
-except Exception as e:
-    print(f"❌ Error de conexión con la API de Beehiiv: {e}")
+if response.status_code == 201:
+    print("✅ Borrador renderizado en HTML y subido a Beehiiv con éxito.")
+else:
+    print(f"❌ Error subiendo a Beehiiv: {response.status_code} - {response.text}")
     sys.exit(1)
