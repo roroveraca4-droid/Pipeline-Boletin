@@ -2,7 +2,8 @@ import os
 import sys
 import glob
 from datetime import datetime
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # 1. Configuración de Rutas
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +24,8 @@ if not GEMINI_API_KEY:
     print("❌ Error: Falta la GEMINI_API_KEY.")
     sys.exit(1)
 
-genai.configure(api_key=GEMINI_API_KEY)
+# Inicializar el NUEVO cliente de Gemini
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def read_file(path: str) -> str:
     if os.path.exists(path):
@@ -68,17 +70,19 @@ TAREA:
 Sintetiza las fuentes y redacta la edición de hoy del boletín en formato Markdown siguiendo estrictamente las reglas editoriales (estilo Morning Brew) y de diseño del sistema.
 """
 
-print("⚡ Generando borrador con Gemini (gemini-1.5-flash)...")
+print("⚡ Generando borrador con el nuevo SDK de Gemini...")
 
 try:
-    # 4. Llamada a Gemini 1.5 Flash
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=system_instruction,
-        generation_config={"temperature": 0.4}
+    # 4. Llamada a Gemini usando el nuevo formato
+    response = client.models.generate_content(
+        model='gemini-2.0-flash',
+        contents=user_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=0.4,
+        ),
     )
     
-    response = model.generate_content(user_prompt)
     draft_content = response.text
 
     # 5. Guardar el archivo
