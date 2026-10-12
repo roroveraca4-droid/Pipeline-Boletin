@@ -21,7 +21,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      -- name: Ejecutar Pipeline Completo
+      - name: Ejecutar Pipeline Completo
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
