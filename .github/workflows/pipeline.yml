@@ -28,3 +28,15 @@ jobs:
           BEEHIIV_PUB_ID: ${{ secrets.BEEHIIV_PUB_ID }}
         run: |
           python3 main.py "$GROQ_API_KEY" "$BEEHIIV_API_KEY" "$BEEHIIV_PUB_ID"
+
+      # NUEVO PASO: Guardar los archivos generados antes de destruir la máquina
+      - name: Guardar Gráficas y Borradores (Artifacts)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Archivos-Newsletter
+          path: |
+            charts/
+            drafts/
+            sources/
+            SCRAPER_LOGS.md
