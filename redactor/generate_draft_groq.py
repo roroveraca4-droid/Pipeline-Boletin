@@ -67,7 +67,7 @@ TAREA:
 Sintetiza las fuentes y redacta la edición de hoy del boletín en formato Markdown siguiendo estrictamente las reglas editoriales (estilo Morning Brew) y de diseño del sistema.
 """
 
-print("⚡ Generando borrador con Groq (Llama 3 70B)...")
+print("⚡ Generando borrador con Groq (mixtral-8x7b-32768)...")
 
 try:
     client = Groq(api_key=GROQ_API_KEY)
@@ -76,7 +76,7 @@ try:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-       model="llama-3.1-70b-versatile",
+       model="mixtral-8x7b-32768",
         temperature=0.4, 
     )
 
