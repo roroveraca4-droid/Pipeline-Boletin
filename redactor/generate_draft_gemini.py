@@ -24,12 +24,12 @@ if not GEMINI_API_KEY:
     print("❌ Error: Falta la GEMINI_API_KEY.")
     sys.exit(1)
 
-# Inicializar el NUEVO cliente de Gemini
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+# Forzamos utf-8-sig para evitar cualquier problema de codificación (Mojibake)
 def read_file(path: str) -> str:
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8-sig") as f:
             return f.read()
     return ""
 
@@ -48,17 +48,19 @@ for file_path in source_files:
     content = read_file(file_path)
     combined_sources += f"\n\n--- FUENTE: {file_name} ---\n\n{content}"
 
-# 3. Preparar Prompts
+# 3. Prompts Blindados (Forzando el tono y el formato Markdown)
 system_instruction = f"""
-Eres el Editor Jefe de un boletín sobre Inteligencia Artificial para profesionales corporativos en Latinoamérica.
+Eres un periodista de tecnología irreverente, sarcástico y directo de 25 años. Escribes para un boletín B2B estilo 'Morning Brew' dirigido a profesionales en Latam.
 
-INSTRUCCIONES PRINCIPALES (SKILL):
+REGLAS DE ORO (SI ROMPES ESTO, EL SISTEMA FALLARÁ):
+1. FORMATO ESTRICTO: Escribe ÚNICAMENTE en texto plano usando Markdown (##, **, -, etc.). ESTÁ TOTALMENTE PROHIBIDO generar etiquetas HTML (como <h1> o <p>).
+2. CERO LENGUAJE CORPORATIVO: Prohibido usar palabras como "adopción efectiva", "escalar iniciativas", "sinergias", "en conclusión".
+3. CERO PARÉNTESIS EXPLICATIVOS: Integra la información de forma fluida.
+4. TRAMA NARRATIVA: Transforma la noticia en un chisme de industria. Empieza con un gancho humano, explica el problema real sin aburrir, y da el impacto para Latam.
+
+INSTRUCCIONES Y REGLAS DE DISEÑO:
 {skill_instructions}
-
-REGLAS EDITORIALES Y DE TONO:
 {editorial_rules}
-
-REGLAS DE DISEÑO Y FORMATO:
 {design_guidelines}
 """
 
@@ -67,25 +69,24 @@ INFORMACIÓN EXTRAÍDA DE LAS FUENTES:
 {combined_sources}
 
 TAREA:
-Sintetiza las fuentes y redacta la edición de hoy del boletín en formato Markdown siguiendo estrictamente las reglas editoriales (estilo Morning Brew) y de diseño del sistema.
+Redacta la edición de hoy siguiendo tu personalidad sarcástica y las Reglas de Oro. Devuelve SOLO el texto en formato Markdown.
 """
 
-print("⚡ Generando borrador con el nuevo SDK de Gemini...")
+print("⚡ Generando borrador con Gemini 3.8 Flash...")
 
 try:
-    # 4. Llamada a Gemini usando el nuevo formato
     response = client.models.generate_content(
         model='gemini-3.8-flash',
         contents=user_prompt,
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
-            temperature=0.4,
+            temperature=0.6, # Aumentado ligeramente para darle más creatividad y sarcasmo
         ),
     )
     
     draft_content = response.text
 
-    # 5. Guardar el archivo
+    # 5. Guardar el archivo forzando UTF-8 puro
     date_str = datetime.now().strftime("%Y-%m-%d")
     output_filename = f"draft_{date_str}.md"
     output_path = os.path.join(DRAFTS_DIR, output_filename)
@@ -93,7 +94,7 @@ try:
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(draft_content)
 
-    print(f"✅ Borrador generado exitosamente en: drafts/{output_filename}")
+    print(f"✅ Borrador limpio generado exitosamente en: drafts/{output_filename}")
 
 except Exception as e:
     print(f"❌ Error al consultar la API de Gemini: {e}")
