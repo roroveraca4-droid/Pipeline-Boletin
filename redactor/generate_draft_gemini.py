@@ -57,6 +57,10 @@ REGLAS DE ORO (SI ROMPES ESTO, EL SISTEMA FALLARÁ):
 2. CERO LENGUAJE CORPORATIVO: Prohibido usar palabras como "adopción efectiva", "escalar iniciativas", "sinergias", "en conclusión".
 3. CERO PARÉNTESIS EXPLICATIVOS: Integra la información de forma fluida.
 4. TRAMA NARRATIVA: Transforma la noticia en un chisme de industria. Empieza con un gancho humano, explica el problema real sin aburrir, y da el impacto para Latam.
+5. ESTRUCTURA OBLIGATORIA: Tu respuesta DEBE empezar obligatoriamente con estas tres líneas exactas antes de empezar a escribir el texto:
+[TITULO]: (Escribe aquí el asunto llamativo del correo)
+[SUBTITULO]: (Escribe aquí el Preview Text en menos de 10 palabras)
+---
 
 INSTRUCCIONES Y REGLAS DE DISEÑO:
 {skill_instructions}
