@@ -1,14 +1,12 @@
 import os
 import sys
 import glob
-import json
 import requests
 import markdown
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 DRAFTS_DIR = os.path.join(PROJECT_ROOT, "drafts")
-TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
 
 BEEHIIV_API_KEY = sys.argv[1]
 BEEHIIV_PUB_ID = sys.argv[2]
@@ -43,23 +41,17 @@ if "[TITULO]:" in raw_content and "---" in raw_content:
 # 2. Calcular Tiempo de Lectura (200 palabras por minuto)
 word_count = len(body_markdown.split())
 reading_time_mins = max(1, round(word_count / 200))
-reading_time_text = f"Lectura: {reading_time_mins} min"
 
-# 3. Convertir Markdown a HTML
+# 3. Píldora visual de tiempo de lectura (elegante y minimalista)
+reading_time_html = f"<p style='color: #888888; font-size: 14px;'><em>⏱ Lectura: {reading_time_mins} min</em></p><hr>"
+
+# 4. Convertir Markdown a HTML limpio
 body_html = markdown.markdown(body_markdown)
 
-# 4. Inyectar todo en la plantilla HTML de Waise Studio
-with open(TEMPLATE_FILE, "r", encoding="utf-8") as f:
-    html_template = f.read()
+# Unimos la píldora de lectura con el contenido de la noticia
+final_content = reading_time_html + body_html
 
-# Reemplazamos las variables (puedes cambiar tu Logo URL aquí luego)
-final_html = html_template.replace("{{PREHEADER}}", subtitle)
-final_html = final_html.replace("{{CONTENT_BODY}}", body_html)
-final_html = final_html.replace("{{READING_TIME}}", reading_time_text)
-final_html = final_html.replace("{{ISSUE_TAG}}", "EDICIÓN B2B")
-final_html = final_html.replace("{{LOGO_URL}}", "https://i.imgur.com/TuLogoAqui.png")
-
-# 5. Enviar a Beehiiv
+# 5. Enviar a Beehiiv (Sin plantillas anidadas)
 headers = {
     "Authorization": f"Bearer {BEEHIIV_API_KEY}",
     "Content-Type": "application/json"
@@ -68,16 +60,14 @@ headers = {
 payload = {
     "title": title,
     "subtitle": subtitle,
-    "body_content": final_html,
-    "web_content": final_html,
-    "email_content": final_html,
+    "body_content": final_content,
     "status": "draft"
 }
 
 response = requests.post(BEEHIIV_API_URL, headers=headers, json=payload)
 
 if response.status_code == 201:
-    print("✅ Borrador renderizado en HTML y subido a Beehiiv con éxito.")
+    print("✅ Borrador subido a Beehiiv con formato nativo y centrado.")
 else:
     print(f"❌ Error subiendo a Beehiiv: {response.status_code} - {response.text}")
     sys.exit(1)
