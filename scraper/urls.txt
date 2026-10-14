@@ -1,3 +1,3 @@
-https://www.iso.org/es/inteligencia-artificial
-https://www.skillnest.com/blog/principios-basicos-de-la-ia/
-https://nosoloaytos.wordpress.com/2024/02/20/inteligencia-artificial-10-conceptos-basicos-explicados-para-novatos/
+https://openai.com/index/why-language-models-hallucinate/
+https://cdn.openai.com/pdf/d04913be-3f6f-4d2b-b283-ff432ef4aaa5/why-language-models-hallucinate.pdf
+https://fortune.com/2025/08/18/mit-report-95-percent-generative-ai-pilots-at-companies-failing-cfo/
