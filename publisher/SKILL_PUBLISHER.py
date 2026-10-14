@@ -68,6 +68,7 @@ headers = {
 payload = {
     "title": title,
     "subtitle": subtitle,
+    "body_content": final_html,
     "web_content": final_html,
     "email_content": final_html,
     "status": "draft"
