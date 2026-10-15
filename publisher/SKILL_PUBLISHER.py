@@ -38,20 +38,25 @@ if "[TITULO]:" in raw_content and "---" in raw_content:
         elif line.startswith("[SUBTITULO]:"):
             subtitle = line.replace("[SUBTITULO]:", "").strip()
 
+# --- NUEVA LIMPIEZA ANTI-CÓDIGO DE IA ---
+# Eliminamos las triples comillas que Gemini a veces usa y que rompen el formato
+body_markdown = body_markdown.replace("```markdown", "").replace("```", "").strip()
+
 # 2. Calcular Tiempo de Lectura (200 palabras por minuto)
 word_count = len(body_markdown.split())
 reading_time_mins = max(1, round(word_count / 200))
 
-# 3. Píldora visual de tiempo de lectura (elegante y minimalista)
-reading_time_html = f"<p style='color: #888888; font-size: 14px;'><em>⏱ Lectura: {reading_time_mins} min</em></p><hr>"
+# 3. Construir el Encabezado (Título Real + Píldora de lectura)
+header_html = f"<h1 style='color: #111111; margin-bottom: 8px;'>{title}</h1>"
+header_html += f"<p style='color: #888888; font-size: 14px; margin-top: 0;'><em>⏱ Lectura: {reading_time_mins} min</em></p><hr style='border: 1px solid #EAEAEC; margin-bottom: 24px;'>"
 
 # 4. Convertir Markdown a HTML limpio
 body_html = markdown.markdown(body_markdown)
 
-# Unimos la píldora de lectura con el contenido de la noticia
-final_content = reading_time_html + body_html
+# Unimos todo y lo envolvemos en un contenedor estándar y seguro para evitar desbordes
+final_content = f"<div style='text-align: left; max-width: 100%; font-family: sans-serif; font-size: 16px; line-height: 1.6; color: #333333;'>{header_html}{body_html}</div>"
 
-# 5. Enviar a Beehiiv (Sin plantillas anidadas)
+# 5. Enviar a Beehiiv
 headers = {
     "Authorization": f"Bearer {BEEHIIV_API_KEY}",
     "Content-Type": "application/json"
