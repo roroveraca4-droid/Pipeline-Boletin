@@ -3,6 +3,7 @@ import sys
 import glob
 import requests
 import markdown
+import re  # <-- IMPORTANTE: Añadimos esta librería para buscar la imagen
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
@@ -39,16 +40,14 @@ if "[TITULO]:" in raw_content and "---" in raw_content:
             subtitle = line.replace("[SUBTITULO]:", "").strip()
 
 # --- LIMPIEZA EXTREMA ANTI-CÓDIGO Y ANTI-ESPACIOS ---
-# 1. Quitamos comillas de código
 body_markdown = body_markdown.replace("```markdown", "").replace("```", "").strip()
 
-# 2. Destruimos cualquier espacio o tabulación al inicio de cada línea (el culpable del margen chueco)
 lineas_limpias = []
 for linea in body_markdown.split('\n'):
     lineas_limpias.append(linea.lstrip())
 body_markdown = '\n'.join(lineas_limpias)
 
-# 2. Calcular Tiempo de Lectura (200 palabras por minuto)
+# 2. Calcular Tiempo de Lectura
 word_count = len(body_markdown.split())
 reading_time_mins = max(1, round(word_count / 200))
 
@@ -56,14 +55,26 @@ reading_time_mins = max(1, round(word_count / 200))
 header_html = f"<h1 style='color: #111111; margin-bottom: 8px;'>{title}</h1>"
 header_html += f"<p style='color: #888888; font-size: 14px; margin-top: 0;'><em>⏱ Lectura: {reading_time_mins} min</em></p><hr style='border: 1px solid #EAEAEC; margin-bottom: 24px;'>"
 
-# 4. Convertir Markdown a HTML limpio
+# 4. Convertir Markdown a HTML
 body_html = markdown.markdown(body_markdown)
 
-# 5. Parche de seguridad extra: Si por algún motivo quedó código, le quitamos las etiquetas
+# Parche de seguridad
 body_html = body_html.replace("<pre>", "").replace("</pre>", "").replace("<code>", "").replace("</code>", "")
 
-# Unimos todo y alineamos
-final_content = f"<div style='text-align: left; max-width: 100%; font-family: sans-serif; font-size: 16px; line-height: 1.6; color: #333333;'>{header_html}{body_html}</div>"
+# --- NUEVA AUTOMATIZACIÓN DE THUMBNAIL ---
+# Buscamos la URL de la primera imagen dentro del HTML generado
+thumbnail_url = ""
+match_img = re.search(r'src=["\']([^"\']+)["\']', body_html)
+if match_img:
+    thumbnail_url = match_img.group(1)
+
+# 5. Unimos todo
+final_content = f"{header_html}{body_html}"
+
+# Borramos texto basura de gráficos locales por si acaso
+final_content = final_content.replace("*(Gráfico generado localmente en la carpeta charts/. Recuerda subir el archivo", "")
+final_content = final_content.replace("(Gráfico generado localmente", "")
+final_content = final_content.replace("a Beehiiv)*", "").replace("a Beehiiv)", "")
 
 # 6. Enviar a Beehiiv
 headers = {
@@ -78,10 +89,14 @@ payload = {
     "status": "draft"
 }
 
+# Si encontramos una imagen, la agregamos como portada oficial para el SEO y Feed
+if thumbnail_url:
+    payload["thumbnail_url"] = thumbnail_url
+
 response = requests.post(BEEHIIV_API_URL, headers=headers, json=payload)
 
 if response.status_code == 201:
-    print("✅ Borrador subido a Beehiiv con formato nativo y centrado.")
+    print(f"✅ Borrador subido a Beehiiv. Portada configurada: {'Sí' if thumbnail_url else 'No'}")
 else:
     print(f"❌ Error subiendo a Beehiiv: {response.status_code} - {response.text}")
     sys.exit(1)
