@@ -1,1 +1,1 @@
-https://developers.openai.com/api/docs/deprecations.md
+https://developers.openai.com/api/docs/deprecations
