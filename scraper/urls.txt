@@ -1,1 +1,1 @@
-https://developers.openai.com/api/docs/deprecations
+https://claude.com/resources/articles/claude-duet
